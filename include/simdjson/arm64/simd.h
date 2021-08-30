@@ -447,6 +447,14 @@ simdjson_really_inline int8x16_t make_int8x16_t(int8_t x1,  int8_t x2,  int8_t x
     }
 
     simdjson_really_inline uint64_t to_bitmask() const {
+      const uint32x4_t magic = { 0xf0f1f3f8, 0x0f1f3f80, 0xf0f1f3f8, 0x0f1f3f80 };
+      const uint8x8_t idx = { 3, 7, 11, 15, 19, 23, 27, 31 };
+
+      uint8x16x2_t tbl = {
+        vpaddq_u32(vmulq_u32(this->chunks[0], magic), vmulq_u32(this->chunks[1], magic)),
+        vpaddq_u32(vmulq_u32(this->chunks[2], magic), vmulq_u32(this->chunks[3], magic)),
+      };
+#if 0
 #ifdef SIMDJSON_REGULAR_VISUAL_STUDIO
       const uint8x16_t bit_mask = make_uint8x16_t(
         0x01, 0x02, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
@@ -463,7 +471,8 @@ simdjson_really_inline int8x16_t make_int8x16_t(int8_t x1,  int8_t x2,  int8_t x
       uint8x16_t sum1 = vpaddq_u8(this->chunks[2] & bit_mask, this->chunks[3] & bit_mask);
       sum0 = vpaddq_u8(sum0, sum1);
       sum0 = vpaddq_u8(sum0, sum0);
-      return vgetq_lane_u64(vreinterpretq_u64_u8(sum0), 0);
+#endif
+      return vget_lane_u64(vreinterpret_u64_u8(vqtbl2_u8(tbl, idx)), 0);
     }
 
     simdjson_really_inline uint64_t eq(const T m) const {
